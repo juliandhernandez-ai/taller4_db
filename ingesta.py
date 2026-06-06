@@ -1,53 +1,64 @@
+import os
 import requests
 from pymongo import MongoClient
+from dotenv import load_dotenv
+
+# Cargar las variables de entorno desde el archivo .env
+load_dotenv()
 
 def extraer_datos_api():
-    """Descarga los datos de la API manejando la paginación."""
+    print("--- FASE 1: EXTRACCIÓN DE DATOS ---")
     url_actual = "https://rickandmortyapi.com/api/character"
     todos_los_personajes = []
     
-    # Repetir hasta superar la barrera de los 100 objetos requeridos
-    while url_actual and len(todos_los_personajes) < 100:
-        print(f"Descargando página: {url_actual}")
+    # La API entrega 20 registros por página. Iteramos hasta superar el mínimo de 100 requeridos.
+    while url_actual and len(todos_los_personajes) < 120:
+        print(f"Descargando datos desde: {url_actual}")
         respuesta = requests.get(url_actual)
         
         if respuesta.status_code == 200:
             datos = respuesta.json()
-            # Agregamos los personajes crudos a nuestra lista
+            # Añadimos los personajes de la página actual a nuestra lista acumulativa
             todos_los_personajes.extend(datos["results"])
-            
-            # Pasamos a la siguiente página
+            # Avanzamos a la siguiente página de la API
             url_actual = datos["info"]["next"]
         else:
-            print(f"Error en la extracción. Código: {respuesta.status_code}")
+            print(f"❌ Error al consultar la API: {respuesta.status_code}")
             break
             
+    print(f"✅ Extracción completada. Total descargados: {len(todos_los_personajes)} personajes.\n")
     return todos_los_personajes
 
 def guardar_en_mongodb(datos_crudos):
-    print(f"\n--- DIAGNÓSTICO DE GUARDADO ---")
-    print(f"1. Datos recibidos para guardar: {len(datos_crudos)} objetos.")
-    
-    if len(datos_crudos) == 0:
-        print("❌ ERROR: La lista de datos está vacía. Como no hay datos, MongoDB NO creará la base de datos.")
+    print("--- FASE 2: GUARDADO EN MONGODB ---")
+    if not datos_crudos:
+        print("❌ Error: No hay datos disponibles para guardar.")
         return
 
     try:
-        print("2. Intentando conectar a MongoDB...")
-        # NOTA: Si vas a usar Atlas, cambia esta URL por la tuya
-        cliente = MongoClient("mongodb://localhost:27017/", serverSelectionTimeoutMS=5000)
+        # Recuperar la URI de conexión guardada de forma segura en el archivo .env
+        URI = os.getenv("MONGO_URI")
         
-        # 3. Forzamos un 'ping' para comprobar si el servidor realmente responde
-        cliente.admin.command('ping')
-        print("✅ ¡Conexión exitosa al servidor de MongoDB!")
-
-        # 4. Preparando la base de datos y colección
+        if not URI:
+            raise ValueError("No se encontró la variable 'MONGO_URI' configurada en el archivo .env")
+        
+        # Inicializar el cliente de MongoDB
+        cliente = MongoClient(URI, serverSelectionTimeoutMS=5000)
+        
+        # Configurar la Base de Datos y Colección con los nombres oficiales de la rúbrica
         db = cliente["taller4_db"]
         coleccion = db["raw_data"]
         
-        print("5. Insertando los datos...")
-        coleccion.insert_many(datos_crudos)
-        print("✅ ¡ÉXITO! Los datos fueron insertados. Ve a Compass y dale al botón de Refresh.")
+        # 1. LIMPIEZA: Vaciar la colección si ya contiene registros previos
+        print("Limpiando registros antiguos de la colección...")
+        resultado_borrado = coleccion.delete_many({})
+        print(f"🗑️ Se eliminaron {resultado_borrado.deleted_count} documentos antiguos.")
+        
+        # 2. INSERCIÓN: Almacenar el JSON crudo tal cual llega de la API
+        print("Insertando nuevos datos crudos en MongoDB Atlas...")
+        resultado_insercion = coleccion.insert_many(datos_crudos)
+        print(f"✅ ¡Éxito! Se guardaron correctamente {len(resultado_insercion.inserted_ids)} documentos.")
         
     except Exception as e:
-        print(f"❌ ERROR CRÍTICO AL CONECTAR O GUARDAR: {e}")
+        print(f"❌ Error crítico en el proceso de almacenamiento: {e}")
+
