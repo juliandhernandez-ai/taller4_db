@@ -12,7 +12,7 @@ def extraer_datos_api():
     todos_los_personajes = []
     
     # La API entrega 20 registros por página. Iteramos hasta superar el mínimo de 100 requeridos.
-    while url_actual and len(todos_los_personajes) < 120:
+    while url_actual and len(todos_los_personajes) < 800:
         print(f"Descargando datos desde: {url_actual}")
         respuesta = requests.get(url_actual)
         
