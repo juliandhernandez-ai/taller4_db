@@ -58,43 +58,15 @@ La API proporciona información detallada sobre los personajes de la serie, incl
 
 ---
 
-# Estructura del Proyecto
 
-```text
-TALLER4_RICKMORTY_MONGODB
-│
-├── etl/
-│   ├── common/
-│   │   ├── config.py
-│   │   └── db.py
-│   │
-│   ├── extract/
-│   │   └── extract.py
-│   │
-│   ├── load/
-│   │   └── load.py
-│   │
-│   └── transform/
-│       └── transform.py
-│
-├── analisis.ipynb
-├── main.py
-├── requirements.txt
-├── .env
-├── .env.example
-├── README.md
-└── .gitignore
-```
-
----
 
 # Instalación
 
 ## 1. Clonar el repositorio
 
 ```bash
-git clone <URL_DEL_REPOSITORIO>
-cd TALLER4_RICKMORTY_MONGODB
+git clone <https://github.com/juliandhernandez-ai/taller4_db.git>
+cd TALLER4_DB
 ```
 
 ## 2. Crear entorno virtual
@@ -350,7 +322,7 @@ Se calculan métricas relevantes como:
 
 Se generan tres gráficos:
 
-### 1. Gráfico de Torta
+### 1. Diagrama circular
 
 Distribución porcentual por género.
 
